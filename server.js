@@ -45,12 +45,21 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-// API: Get All Keys (Optional filter by creator)
+// API: Get All Keys (Admin sees everything with Creator name)
 app.get('/api/keys', async (req, res) => {
   try {
-    const { creator } = req.query;
-    let query = creator ? { createdBy: creator } : {};
-    const keys = await LicenseKey.find(query).sort({ _id: -1 });
+    const keys = await LicenseKey.find().sort({ _id: -1 });
+    res.json({ success: true, data: keys });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Get Reseller Keys (Reseller sees only their own keys)
+app.get('/api/reseller-keys', async (req, res) => {
+  try {
+    const { reseller } = req.query;
+    const keys = await LicenseKey.find({ createdBy: reseller }).sort({ _id: -1 });
     res.json({ success: true, data: keys });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
