@@ -11,7 +11,7 @@
         h2 { color: #fff; text-align: center; margin: 0; font-size: 24px; font-weight: 800; }
         label { display: block; margin-top: 12px; font-weight: 600; font-size: 13px; color: #555; }
         input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; outline: none; }
-        button { background: #28a745; color: white; border: none; padding: 12px; width: 100%; margin-top: 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button { background: #28a745; color: white; border: none; padding: 12px; width: 100%; margin-top: 15px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
         button:hover { background: #218838; }
         .nav-tabs { display: flex; gap: 4px; margin-bottom: 20px; }
         .nav-tabs button { margin-top: 0; padding: 8px 4px; font-size: 11px; background: #e9ecef; color: #333; border-radius: 6px; flex: 1; border: none; cursor: pointer; }
@@ -22,6 +22,10 @@
         .key-list { margin-top: 15px; max-height: 250px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; }
         .key-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 12px; }
         .del-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; width: auto; margin-top: 0; }
+        .btn-flex { display: flex; gap: 5px; margin-top: 5px; }
+        .gen-btn { background: #17a2b8; font-size: 12px; padding: 8px; margin-top: 0; flex: 2; }
+        .copy-btn { background: #6c757d; font-size: 12px; padding: 8px; margin-top: 0; flex: 1; }
+        .copy-btn:hover { background: #5a6268; }
     </style>
 </head>
 <body>
@@ -33,8 +37,8 @@
 
     <!-- Admin Login Screen -->
     <div id="adminLoginArea">
-        <label>Admin Password</label>
-        <input type="password" id="adminPassInput" placeholder="Enter password (raj123)">
+        <label>ROOT PASS</label>
+        <input type="password" id="adminPassInput" placeholder="Enter root password" autocomplete="new-password">
         <button onclick="loginAdmin()" style="background: #ff416c;">Login to Admin</button>
         <p id="loginError" style="color:red; font-size:12px; text-align:center; margin-top:10px; display:none;">Incorrect Password!</p>
     </div>
@@ -51,6 +55,10 @@
         <div id="keyGenSection" class="section active">
             <label>KEY</label>
             <input type="text" id="keyInput" placeholder="KEY">
+            <div class="btn-flex">
+                <button type="button" class="gen-btn" onclick="generateRandomKey('keyInput')">⚡ Generate Random</button>
+                <button type="button" class="copy-btn" onclick="copyToClipboard('keyInput')">📋 Copy</button>
+            </div>
 
             <label>expiry date</label>
             <select id="hoursInput">
@@ -69,16 +77,17 @@
         <div id="keyListSection" class="section">
             <label>All Generated Keys & Expiry Details</label>
             <div class="key-list" id="keyListContainer">Loading...</div>
-            <div style="display: flex; gap: 5px; margin-top: 10px;">
-                <button onclick="loadKeys()" style="background:#17a2b8; margin-top:0; flex:1;">Refresh List</button>
-                <button onclick="resetAllKeys()" style="background:#dc3545; margin-top:0; flex:1;">Reset All Keys</button>
-            </div>
+            <button onclick="loadKeys()" style="background:#17a2b8; margin-top:10px;">Refresh List</button>
         </div>
 
         <!-- Add Reseller Section -->
         <div id="resellerSection" class="section">
             <label>KEY</label>
             <input type="text" id="resellerName" placeholder="KEY">
+            <div class="btn-flex">
+                <button type="button" class="gen-btn" onclick="generateRandomKey('resellerName')">⚡ Generate Random</button>
+                <button type="button" class="copy-btn" onclick="copyToClipboard('resellerName')">📋 Copy</button>
+            </div>
 
             <label>Credit</label>
             <select id="resellerCredits">
@@ -107,6 +116,25 @@ function loginAdmin() {
     } else {
         document.getElementById('loginError').style.display = 'block';
     }
+}
+
+function generateRandomKey(elementId) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let randomStr = "RAJ";
+    for (let i = 0; i < 8; i++) {
+        randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById(elementId).value = randomStr;
+}
+
+function copyToClipboard(elementId) {
+    const inputField = document.getElementById(elementId);
+    if (!inputField.value) {
+        alert('Nothing to copy!');
+        return;
+    }
+    navigator.clipboard.writeText(inputField.value);
+    alert('Copied to clipboard: ' + inputField.value);
 }
 
 function switchTab(tab) {
@@ -173,18 +201,6 @@ async function deleteKey(id) {
     if(!confirm('Are you sure you want to delete this key?')) return;
     await fetch(`/api/key/${id}`, { method: 'DELETE' });
     loadKeys();
-}
-
-async function resetAllKeys() {
-    if(!confirm('⚠️ WARNING: Are you sure you want to delete ALL generated keys?')) return;
-    const res = await fetch('/api/reset-keys', { method: 'DELETE' });
-    const data = await res.json();
-    if(data.success) {
-        alert('All keys have been reset successfully!');
-        loadKeys();
-    } else {
-        alert('Failed to reset keys.');
-    }
 }
 
 async function addReseller() {
