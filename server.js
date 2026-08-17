@@ -65,17 +65,7 @@ app.delete('/api/key/:id', async (req, res) => {
   }
 });
 
-// API: Reset / Delete ALL Keys
-app.delete('/api/reset-keys', async (req, res) => {
-  try {
-    await LicenseKey.deleteMany({});
-    res.json({ success: true, message: 'All keys have been reset successfully!' });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// API: Add Reseller (Only Admin can create)
+// API: Add Reseller
 app.post('/api/add-reseller', async (req, res) => {
   try {
     const { username, credits } = req.body;
@@ -97,16 +87,15 @@ app.post('/api/add-reseller', async (req, res) => {
   }
 });
 
-// API: Verify Reseller Login (Strict check against Reseller collection only)
-app.post('/api/verify-reseller', async (req, res) => {
+// API: Get Direct Reseller Info (For Direct Coding Setup)
+app.post('/api/get-direct-reseller', async (req, res) => {
   try {
     const { username } = req.body;
-    if (!username) {
-      return res.json({ success: false, message: 'Username required!' });
-    }
-    const reseller = await Reseller.findOne({ username: username });
+    let reseller = await Reseller.findOne({ username });
+    // अगर डेटाबेस में नहीं है, तो कोडिंग वाले नाम से ऑटोमैटिक बना देगा और सेट क्रेडिट दे देगा
     if (!reseller) {
-      return res.json({ success: false, message: 'Access Denied: Not an authorized reseller!' });
+      reseller = new Reseller({ username, credits: 50 }); // डिफ़ॉल्ट क्रेडिट
+      await reseller.save();
     }
     res.json({ success: true, data: reseller });
   } catch (error) {
@@ -119,9 +108,14 @@ app.post('/api/reseller-generate', async (req, res) => {
   try {
     const { resellerUsername, key, hoursValid, maxDevices } = req.body;
     
-    const reseller = await Reseller.findOne({ username: resellerUsername });
-    if (!reseller || reseller.credits <= 0) {
-      return res.status(403).json({ success: false, message: 'No Credits Left or Invalid Reseller!' });
+    let reseller = await Reseller.findOne({ username: resellerUsername });
+    if (!reseller) {
+      reseller = new Reseller({ username: resellerUsername, credits: 50 });
+      await reseller.save();
+    }
+
+    if (reseller.credits <= 0) {
+      return res.status(403).json({ success: false, message: 'No Credits Left!' });
     }
 
     const expiryDate = new Date(Date.now() + (hoursValid || 24) * 60 * 60 * 1000);
@@ -137,7 +131,7 @@ app.post('/api/reseller-generate', async (req, res) => {
   }
 });
 
-// API: Verify Key (For Game/Lua)
+// API: Verify Key
 app.post('/api/verify', async (req, res) => {
   try {
     const { key, deviceId } = req.body;
