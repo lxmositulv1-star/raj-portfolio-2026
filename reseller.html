@@ -15,9 +15,6 @@
         button:hover { background: #e64a19; }
         #result { margin-top: 15px; padding: 12px; background: #f8f9fa; border-left: 4px solid #ff5722; border-radius: 4px; font-size: 13px; display: none; word-break: break-all; }
         .credit-box { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; text-align: center; font-size: 14px; display: none; }
-        .key-list { margin-top: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; }
-        .key-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 11px; }
-        .del-btn { background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; width: auto; margin-top: 0; }
     </style>
 </head>
 <body>
@@ -50,10 +47,6 @@
         <input type="number" id="limitInput" value="1" min="1">
 
         <button onclick="resellerGenerateKey()">Create Key (1 Credit)</button>
-
-        <hr style="margin: 20px 0; border:0; border-top:1px solid #ddd;">
-        <label>My Generated Keys & Expiry</label>
-        <div class="key-list" id="resellerKeyList">Loading...</div>
     </div>
 
     <div id="result"></div>
@@ -77,7 +70,6 @@ async function loginReseller() {
         document.getElementById('dashboardArea').style.display = 'block';
         document.getElementById('creditDisplay').style.display = 'block';
         document.getElementById('creditDisplay').innerText = `Remaining Credits: ${data.data.credits}`;
-        loadResellerKeys();
     } else {
         alert('Invalid KEY!');
     }
@@ -104,7 +96,6 @@ async function resellerGenerateKey() {
         resultDiv.style.borderLeftColor = '#28a745';
         resultDiv.innerHTML = `<b style="color:green;">✔ Key Generated!</b><br>KEY: ${data.data.key}<br><b>Remaining Credits: ${data.remainingCredits}</b>`;
         document.getElementById('creditDisplay').innerText = `Remaining Credits: ${data.remainingCredits}`;
-        loadResellerKeys();
         
         if(data.remainingCredits <= 0) {
             alert('Your credits are finished!');
@@ -113,25 +104,6 @@ async function resellerGenerateKey() {
     } else {
         resultDiv.style.borderLeftColor = '#dc3545';
         resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message || 'No Credits Left!'}`;
-    }
-}
-
-async function loadResellerKeys() {
-    const container = document.getElementById('resellerKeyList');
-    const res = await fetch(`/api/keys?creator=${currentReseller}`);
-    const data = await res.json();
-    if(data.success && data.data.length > 0) {
-        container.innerHTML = '';
-        data.data.forEach(k => {
-            const expDate = new Date(k.expiry).toLocaleString();
-            container.innerHTML += `
-                <div class="key-item">
-                    <div><b>${k.key}</b><br><span style="color:#666;">Exp: ${expDate}</span></div>
-                    <span>Active</span>
-                </div>`;
-        });
-    } else {
-        container.innerHTML = 'No Keys Generated Yet!';
     }
 }
 </script>
