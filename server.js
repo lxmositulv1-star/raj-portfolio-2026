@@ -75,11 +75,11 @@ app.delete('/api/reset-keys', async (req, res) => {
   }
 });
 
-// API: Add Reseller
+// API: Add Reseller (Only Admin can create)
 app.post('/api/add-reseller', async (req, res) => {
   try {
     const { username, credits } = req.body;
-    if (!username) return res.status(400).json({ success: false, message: 'KEY required!' });
+    if (!username) return res.status(400).json({ success: false, message: 'Username required!' });
 
     let reseller = await Reseller.findOne({ username });
     if (reseller) {
@@ -97,16 +97,16 @@ app.post('/api/add-reseller', async (req, res) => {
   }
 });
 
-// API: Verify Reseller Login (Strict Check - Prevents random bypass)
+// API: Verify Reseller Login (Strict check against Reseller collection only)
 app.post('/api/verify-reseller', async (req, res) => {
   try {
     const { username } = req.body;
     if (!username) {
       return res.json({ success: false, message: 'Username required!' });
     }
-    const reseller = await Reseller.findOne({ username });
+    const reseller = await Reseller.findOne({ username: username });
     if (!reseller) {
-      return res.json({ success: false, message: 'Invalid Reseller Key/Username!' });
+      return res.json({ success: false, message: 'Access Denied: Not an authorized reseller!' });
     }
     res.json({ success: true, data: reseller });
   } catch (error) {
@@ -121,7 +121,7 @@ app.post('/api/reseller-generate', async (req, res) => {
     
     const reseller = await Reseller.findOne({ username: resellerUsername });
     if (!reseller || reseller.credits <= 0) {
-      return res.status(403).json({ success: false, message: 'No Credits Left or Invalid Key!' });
+      return res.status(403).json({ success: false, message: 'No Credits Left or Invalid Reseller!' });
     }
 
     const expiryDate = new Date(Date.now() + (hoursValid || 24) * 60 * 60 * 1000);
@@ -137,7 +137,7 @@ app.post('/api/reseller-generate', async (req, res) => {
   }
 });
 
-// API: Verify Key
+// API: Verify Key (For Game/Lua)
 app.post('/api/verify', async (req, res) => {
   try {
     const { key, deviceId } = req.body;
