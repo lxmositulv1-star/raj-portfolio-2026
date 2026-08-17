@@ -11,10 +11,14 @@
         h2 { color: #fff; text-align: center; margin: 0; font-size: 24px; font-weight: 800; }
         label { display: block; margin-top: 12px; font-weight: 600; font-size: 13px; color: #555; }
         input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; outline: none; }
-        button { background: #ff5722; color: white; border: none; padding: 12px; width: 100%; margin-top: 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button { background: #ff5722; color: white; border: none; padding: 12px; width: 100%; margin-top: 15px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
         button:hover { background: #e64a19; }
         #result { margin-top: 15px; padding: 12px; background: #f8f9fa; border-left: 4px solid #ff5722; border-radius: 4px; font-size: 13px; display: none; word-break: break-all; }
         .credit-box { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; text-align: center; font-size: 14px; display: none; }
+        .btn-flex { display: flex; gap: 5px; margin-top: 5px; }
+        .gen-btn { background: #17a2b8; font-size: 12px; padding: 8px; margin-top: 0; flex: 2; }
+        .copy-btn { background: #6c757d; font-size: 12px; padding: 8px; margin-top: 0; flex: 1; }
+        .copy-btn:hover { background: #5a6268; }
     </style>
 </head>
 <body>
@@ -38,6 +42,10 @@
 
         <label>KEY</label>
         <input type="text" id="keyInput" placeholder="KEY">
+        <div class="btn-flex">
+            <button type="button" class="gen-btn" onclick="generateRandomKey('keyInput')">⚡ Generate Random</button>
+            <button type="button" class="copy-btn" onclick="copyToClipboard('keyInput')">📋 Copy</button>
+        </div>
 
         <label>expiry date</label>
         <select id="hoursInput">
@@ -57,6 +65,25 @@
 
 <script>
 let currentReseller = '';
+
+function generateRandomKey(elementId) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let randomStr = "RES";
+    for (let i = 0; i < 8; i++) {
+        randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById(elementId).value = randomStr;
+}
+
+function copyToClipboard(elementId) {
+    const inputField = document.getElementById(elementId);
+    if (!inputField.value) {
+        alert('Nothing to copy!');
+        return;
+    }
+    navigator.clipboard.writeText(inputField.value);
+    alert('Copied to clipboard: ' + inputField.value);
+}
 
 async function loginReseller() {
     currentReseller = document.getElementById('resellerUsername').value.trim();
