@@ -6,22 +6,22 @@
     <title>RAJ MODS - Admin Panel</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 480px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 500px; }
         .header-box { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
         h2 { color: #fff; text-align: center; margin: 0; font-size: 24px; font-weight: 800; }
         label { display: block; margin-top: 12px; font-weight: 600; font-size: 13px; color: #555; }
         input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; outline: none; }
         button { background: #28a745; color: white; border: none; padding: 12px; width: 100%; margin-top: 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
         button:hover { background: #218838; }
-        .nav-tabs { display: flex; gap: 5px; margin-bottom: 20px; }
-        .nav-tabs button { margin-top: 0; padding: 8px; font-size: 12px; background: #e9ecef; color: #333; border-radius: 6px; }
+        .nav-tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+        .nav-tabs button { margin-top: 0; padding: 8px 4px; font-size: 11px; background: #e9ecef; color: #333; border-radius: 6px; flex: 1; }
         .nav-tabs button.active { background: #ff416c; color: white; }
         .section { display: none; }
         .section.active { display: block; }
         #result { margin-top: 15px; padding: 12px; background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 4px; font-size: 13px; display: none; word-break: break-all; }
-        .key-list { margin-top: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; }
-        .key-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 12px; }
-        .del-btn { background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; width: auto; margin-top: 0; }
+        .key-list { margin-top: 15px; max-height: 250px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; }
+        .key-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 11px; }
+        .del-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; width: auto; margin-top: 0; }
     </style>
 </head>
 <body>
@@ -33,7 +33,7 @@
 
     <div class="nav-tabs">
         <button id="tabKeyBtn" class="active" onclick="switchTab('keyGen')">Generate</button>
-        <button id="tabListBtn" onclick="switchTab('keyList')">Key List & Delete</button>
+        <button id="tabListBtn" onclick="switchTab('keyList')">Key List & Expiry</button>
         <button id="tabResellerBtn" onclick="switchTab('reseller')">Add Reseller</button>
     </div>
 
@@ -55,9 +55,9 @@
         <button onclick="generateKey()">Create Key</button>
     </div>
 
-    <!-- Key List & Delete Section -->
+    <!-- Key List & Expiry Section -->
     <div id="keyListSection" class="section">
-        <label>All Generated Keys (Click Delete to Remove)</label>
+        <label>All Generated Keys & Expiry Details</label>
         <div class="key-list" id="keyListContainer">Loading...</div>
         <button onclick="loadKeys()" style="background:#17a2b8; margin-top:10px;">Refresh List</button>
     </div>
@@ -131,7 +131,12 @@ async function loadKeys() {
     if(data.success && data.data.length > 0) {
         container.innerHTML = '';
         data.data.forEach(k => {
-            container.innerHTML += `<div class="key-item"><span><b>${k.key}</b> (${k.status})</span> <button class="del-btn" onclick="deleteKey('${k._id}')">Delete</button></div>`;
+            const expDate = new Date(k.expiry).toLocaleString();
+            container.innerHTML += `
+                <div class="key-item">
+                    <div><b>${k.key}</b><br><span style="color:#666;">Exp: ${expDate}</span></div>
+                    <button class="del-btn" onclick="deleteKey('${k._id}')">Delete</button>
+                </div>`;
         });
     } else {
         container.innerHTML = 'No Keys Found!';
