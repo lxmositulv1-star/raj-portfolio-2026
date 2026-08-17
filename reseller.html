@@ -34,7 +34,7 @@
         <p id="resellerLoginError" style="color:red; font-size:12px; text-align:center; margin-top:10px; display:none;">Access Denied: You are not an authorized Reseller!</p>
     </div>
 
-    <!-- Reseller Dashboard (Clean Auto-Generation) -->
+    <!-- Reseller Dashboard -->
     <div id="dashboardArea" style="display:none;">
         <div id="creditDisplay" class="credit-box">Remaining Credits: 0</div>
 
@@ -48,7 +48,7 @@
         <label>Usage Limit (Devices)</label>
         <input type="number" id="limitInput" value="1" min="1">
 
-        <button onclick="resellerGenerateKey()">Create Key (1 Credit)</button>
+        <button onclick="resellerGenerateKey()">Create Key (Auto)</button>
     </div>
 
     <div id="result"></div>
@@ -78,7 +78,6 @@ async function loginReseller() {
     }
 }
 
-// ऑटोमैटिक रैंडम की स्ट्रिंग बनाने वाला फंक्शन
 function createRandomString() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let randomStr = "RES-";
