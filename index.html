@@ -49,7 +49,7 @@
             <button id="tabResellerBtn" onclick="switchTab('reseller')">Add Reseller</button>
         </div>
 
-        <!-- Generate Key Section (Auto Key System) -->
+        <!-- Generate Key Section -->
         <div id="keyGenSection" class="section active">
             <label>Expiry Date</label>
             <select id="hoursInput">
@@ -123,7 +123,6 @@ function switchTab(tab) {
     document.getElementById('result').style.display = 'none';
 }
 
-// ऑटोमैटिक रैंडम की स्ट्रिंग बनाने वाला फंक्शन
 function createRandomString() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let randomStr = "RAJ-";
