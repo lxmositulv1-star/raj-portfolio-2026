@@ -24,6 +24,8 @@
         .del-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; width: auto; margin-top: 0; }
         .inline-copy-btn { background: #ff416c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-top: 8px; display: inline-block; width: auto; }
         .inline-copy-btn:hover { background: #e0355b; }
+        .auto-gen-btn { background: #17a2b8; margin-top: 8px; padding: 8px; font-size: 13px; }
+        .auto-gen-btn:hover { background: #138496; }
     </style>
 </head>
 <body>
@@ -71,10 +73,11 @@
             <button onclick="loadKeys()" style="background:#17a2b8; margin-top:10px;">Refresh List</button>
         </div>
 
-        <!-- Add Reseller Section -->
+        <!-- Add Reseller Section (Auto Username Generator Added) -->
         <div id="resellerSection" class="section">
             <label>Reseller Username</label>
             <input type="text" id="resellerName" placeholder="Enter Reseller Username">
+            <button type="button" class="auto-gen-btn" onclick="fillRandomReseller()">⚡ Auto Generate Username</button>
 
             <label>Credit</label>
             <select id="resellerCredits">
@@ -85,7 +88,7 @@
                 <option value="500">500 Credits</option>
             </select>
 
-            <button onclick="addReseller()" style="background: #007bff;">Create / Add Credit</button>
+            <button onclick="addReseller()" style="background: #007bff;">Create / Add Credit (Auto)</button>
         </div>
     </div>
 
@@ -123,17 +126,21 @@ function switchTab(tab) {
     document.getElementById('result').style.display = 'none';
 }
 
-function createRandomString() {
+function createRandomString(prefix) {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let randomStr = "RAJ-";
+    let randomStr = prefix;
     for (let i = 0; i < 8; i++) {
         randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return randomStr;
 }
 
+function fillRandomReseller() {
+    document.getElementById('resellerName').value = createRandomString("RES-USER-");
+}
+
 async function generateKey() {
-    const autoKey = createRandomString();
+    const autoKey = createRandomString("RAJ-KEY-");
     const hoursValid = document.getElementById('hoursInput').value;
     const maxDevices = document.getElementById('limitInput').value;
     const resultDiv = document.getElementById('result');
@@ -150,7 +157,7 @@ async function generateKey() {
         resultDiv.innerHTML = `
             <b style="color:green;">✔ Key Generated Successfully!</b><br>
             <b>KEY:</b> <span id="generatedKeyText">${data.data.key}</span><br>
-            <button class="inline-copy-btn" onclick="copyGeneratedKey('generatedKeyText')">📋 Copy Key</button>
+            <button class="inline-copy-btn" onclick="copyTextToClipboard('generatedKeyText')">📋 Copy Key</button>
         `;
     } else {
         resultDiv.style.borderLeftColor = '#dc3545';
@@ -158,10 +165,40 @@ async function generateKey() {
     }
 }
 
-function copyGeneratedKey(elementId) {
-    const keyText = document.getElementById(elementId).innerText;
-    navigator.clipboard.writeText(keyText);
-    alert('Key Copied to Clipboard: ' + keyText);
+async function addReseller() {
+    let username = document.getElementById('resellerName').value.trim();
+    if (!username) {
+        username = createRandomString("RES-USER-");
+        document.getElementById('resellerName').value = username;
+    }
+    const credits = document.getElementById('resellerCredits').value;
+    const resultDiv = document.getElementById('result');
+
+    const response = await fetch('/api/add-reseller', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, credits: Number(credits) })
+    });
+    const data = await response.json();
+    resultDiv.style.display = 'block';
+    if (data.success) {
+        resultDiv.style.borderLeftColor = '#007bff';
+        resultDiv.innerHTML = `
+            <b style="color:#007bff;">✔ Reseller Created/Updated Successfully!</b><br>
+            <b>Username:</b> <span id="generatedResellerText">${data.data.username}</span><br>
+            <b>Total Credits: ${data.data.credits}</b><br>
+            <button class="inline-copy-btn" style="background:#007bff;" onclick="copyTextToClipboard('generatedResellerText')">📋 Copy Username</button>
+        `;
+    } else {
+        resultDiv.style.borderLeftColor = '#dc3545';
+        resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message}`;
+    }
+}
+
+function copyTextToClipboard(elementId) {
+    const textToCopy = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(textToCopy);
+    alert('Copied to Clipboard: ' + textToCopy);
 }
 
 async function loadKeys() {
@@ -188,27 +225,6 @@ async function deleteKey(id) {
     if(!confirm('Are you sure to delete this key?')) return;
     await fetch(`/api/key/${id}`, { method: 'DELETE' });
     loadKeys();
-}
-
-async function addReseller() {
-    const username = document.getElementById('resellerName').value;
-    const credits = document.getElementById('resellerCredits').value;
-    const resultDiv = document.getElementById('result');
-
-    if (!username) { alert('Please enter a Username!'); return; }
-
-    const response = await fetch('/api/add-reseller', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, credits: Number(credits) })
-    });
-    const data = await response.json();
-    resultDiv.style.display = 'block';
-    if (data.success) {
-        resultDiv.innerHTML = `<b style="color:#007bff;">✔ Reseller Updated!</b><br>Username: ${data.data.username}<br>Total Credits: <b>${data.data.credits}</b>`;
-    } else {
-        resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message}`;
-    }
 }
 </script>
 
