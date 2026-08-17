@@ -7,18 +7,18 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 420px; }
-        h2 { color: #fff; text-align: center; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1px; }
         .header-box { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(255,65,108,0.3); }
+        h2 { color: #fff; text-align: center; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1px; }
         label { display: block; margin-top: 12px; font-weight: 600; font-size: 13px; color: #555; }
         input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; outline: none; transition: 0.3s; }
-        input:focus { border-color: #ff416c; box-shadow: 0 0 5px rgba(255,65,108,0.3); }
+        input:focus, select:focus { border-color: #ff416c; box-shadow: 0 0 5px rgba(255,65,108,0.3); }
         button { background: #28a745; color: white; border: none; padding: 12px; width: 100%; margin-top: 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button:hover { background: #218838; }
         #result { margin-top: 15px; padding: 12px; background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 4px; word-break: break-all; font-size: 13px; display: none; }
         .section { display: none; }
         .section.active { display: block; }
         .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .nav-tabs button { margin-top: 0; padding: 10px; font-size: 13px; background: #e9ecef; color: #333; font-weight: 600; }
+        .nav-tabs button { margin-top: 0; padding: 10px; font-size: 13px; background: #e9ecef; color: #333; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; }
         .nav-tabs button.active { background: #ff416c; color: white; }
     </style>
 </head>
@@ -54,11 +54,17 @@
 
     <!-- Reseller Management Section -->
     <div id="resellerSection" class="section">
-        <label>Reseller Username</label>
-        <input type="text" id="resellerName" placeholder="जैसे: reseller_raj">
+        <label>KEY</label>
+        <input type="text" id="resellerName" placeholder="KEY">
 
-        <label>Assign Credits</label>
-        <input type="number" id="resellerCredits" placeholder="कितना क्रेडिट देना है (जैसे: 50)" min="1">
+        <label>Credit</label>
+        <select id="resellerCredits">
+            <option value="10">10 Credits</option>
+            <option value="25">25 Credits</option>
+            <option value="50">50 Credits</option>
+            <option value="100">100 Credits</option>
+            <option value="500">500 Credits</option>
+        </select>
 
         <button onclick="addReseller()" style="background: #007bff;">Create Reseller</button>
     </div>
@@ -122,8 +128,8 @@ async function addReseller() {
     const credits = document.getElementById('resellerCredits').value;
     const resultDiv = document.getElementById('result');
 
-    if (!username || !credits) {
-        alert('कृपया सभी डिटेल्स भरें!');
+    if (!username) {
+        alert('कृपया KEY भरें!');
         return;
     }
 
@@ -139,7 +145,7 @@ async function addReseller() {
         
         if (data.success) {
             resultDiv.style.borderLeftColor = '#007bff';
-            resultDiv.innerHTML = `<b style="color:#007bff;">✔ Reseller Added!</b><br><b>User:</b> ${data.data.username}<br><b>Credits:</b> ${data.data.credits}`;
+            resultDiv.innerHTML = `<b style="color:#007bff;">✔ Reseller Added!</b><br><b>KEY:</b> ${data.data.username}<br><b>Credits:</b> ${data.data.credits}`;
         } else {
             resultDiv.style.borderLeftColor = '#dc3545';
             resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message}`;
