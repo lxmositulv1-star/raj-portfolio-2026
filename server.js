@@ -1,39 +1,41 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 app.use(express.json());
+
+// Admin Panel के लिए Static Files सेटअप
+app.use(express.static(path.join(__dirname)));
 
 // 1. MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB Connected Successfully!'))
   .catch(err => console.log('MongoDB Connection Error: ', err));
 
-// 2. Database Schema (Keys के लिए स्ट्रक्चर)
+// 2. Database Schema
 const keySchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
   expiry: { type: Date, required: true },
   maxDevices: { type: Number, default: 1 },
   devices: { type: [String], default: [] },
-  status: { type: String, default: 'Active' } // Active, Banned, Expired
+  status: { type: String, default: 'Active' } 
 });
 
 const LicenseKey = mongoose.model('LicenseKey', keySchema);
 
-// Test Route
+// Admin Panel (index.html) खोलें
 app.get('/', (req, res) => {
-  res.send('Server is running and Connected to DB!');
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // ==========================================
-// API 1: Generate Key (की बनाने के लिए)
+// API 1: Generate Key
 // ==========================================
 app.post('/api/generate', async (req, res) => {
   try {
     const { key, hoursValid, maxDevices } = req.body;
-    
-    // Expiry time calculate करना (घंटों के हिसाब से)
     const expiryDate = new Date(Date.now() + (hoursValid || 24) * 60 * 60 * 1000);
 
     const newKey = new LicenseKey({
@@ -51,71 +53,45 @@ app.post('/api/generate', async (req, res) => {
 });
 
 // ==========================================
-// API 2: Verify / Check Key (गेम या ऐप के लिए मुख्य चेकिंग)
+// API 2: Verify Key
 // ==========================================
 app.post('/api/verify', async (req, res) => {
   try {
     const { key, deviceId } = req.body;
+    if (!key || !deviceId) return res.status(400).json({ success: false, message: 'Required fields missing!' });
 
-    if (!key || !deviceId) {
-      return res.status(400).json({ success: false, message: 'Key and DeviceID are required!' });
-    }
-
-    // डेटाबेस में की ढूँढें
     const foundKey = await LicenseKey.findOne({ key: key });
-
-    if (!foundKey) {
-      return res.json({ success: false, message: 'Invalid Key!' });
-    }
-
-    // Check 1: Ban Status Check
-    if (foundKey.status === 'Banned') {
-      return res.json({ success: false, message: 'This key has been Banned!' });
-    }
-
-    // Check 2: Expiry Date Check
+    if (!foundKey) return res.json({ success: false, message: 'Invalid Key!' });
+    if (foundKey.status === 'Banned') return res.json({ success: false, message: 'Key is Banned!' });
     if (new Date() > new Date(foundKey.expiry)) {
       foundKey.status = 'Expired';
       await foundKey.save();
       return res.json({ success: false, message: 'Key has Expired!' });
     }
 
-    // Check 3: Device ID Check & Limit Check
-    if (foundKey.devices.includes(deviceId)) {
-      return res.json({ success: true, message: 'Key Verified Successfully!' });
-    }
+    if (foundKey.devices.includes(deviceId)) return res.json({ success: true, message: 'Key Verified!' });
+    if (foundKey.devices.length >= foundKey.maxDevices) return res.json({ success: false, message: 'Device limit reached!' });
 
-    if (foundKey.devices.length >= foundKey.maxDevices) {
-      return res.json({ success: false, message: 'Device limit reached for this key!' });
-    }
-
-    // नया डिवाइस सेव करो
     foundKey.devices.push(deviceId);
     await foundKey.save();
-
-    res.json({ success: true, message: 'Device registered and Key Verified successfully!' });
-
+    res.json({ success: true, message: 'Key Verified & Device registered!' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 // ==========================================
-// API 3: Ban Key (की को बैन करने के लिए)
+// API 3: Ban Key
 // ==========================================
 app.post('/api/ban', async (req, res) => {
   try {
     const { key } = req.body;
     const foundKey = await LicenseKey.findOne({ key: key });
-
-    if (!foundKey) {
-      return res.json({ success: false, message: 'Key not found!' });
-    }
+    if (!foundKey) return res.json({ success: false, message: 'Key not found!' });
 
     foundKey.status = 'Banned';
     await foundKey.save();
-
-    res.json({ success: true, message: 'Key successfully Banned!' });
+    res.json({ success: true, message: 'Key Banned successfully!' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
