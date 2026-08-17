@@ -55,7 +55,7 @@ app.get('/api/keys', async (req, res) => {
   }
 });
 
-// API: Delete Key
+// API: Delete Single Key
 app.delete('/api/key/:id', async (req, res) => {
   try {
     await LicenseKey.findByIdAndDelete(req.params.id);
@@ -65,7 +65,17 @@ app.delete('/api/key/:id', async (req, res) => {
   }
 });
 
-// API: Add Reseller (Admin only creates/adds credits)
+// API: Reset / Delete ALL Keys
+app.delete('/api/reset-keys', async (req, res) => {
+  try {
+    await LicenseKey.deleteMany({});
+    res.json({ success: true, message: 'All keys have been reset successfully!' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Add Reseller
 app.post('/api/add-reseller', async (req, res) => {
   try {
     const { username, credits } = req.body;
@@ -87,10 +97,13 @@ app.post('/api/add-reseller', async (req, res) => {
   }
 });
 
-// API: Verify Reseller Login (Strictly checks database)
+// API: Verify Reseller Login (Strict Check - Prevents random bypass)
 app.post('/api/verify-reseller', async (req, res) => {
   try {
     const { username } = req.body;
+    if (!username) {
+      return res.json({ success: false, message: 'Username required!' });
+    }
     const reseller = await Reseller.findOne({ username });
     if (!reseller) {
       return res.json({ success: false, message: 'Invalid Reseller Key/Username!' });
