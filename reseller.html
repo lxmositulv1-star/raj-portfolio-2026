@@ -28,6 +28,7 @@
         <label>KEY</label>
         <input type="text" id="resellerUsername" placeholder="KEY">
         <button onclick="loginReseller()">Login</button>
+        <p id="resellerLoginError" style="color:red; font-size:12px; text-align:center; margin-top:10px; display:none;">अमान्य की (Invalid Key)!</p>
     </div>
 
     <div id="dashboardArea" style="display:none;">
@@ -59,19 +60,20 @@ async function loginReseller() {
     currentReseller = document.getElementById('resellerUsername').value.trim();
     if (!currentReseller) { alert('कृपया KEY लिखें!'); return; }
 
-    const response = await fetch('/api/add-reseller', {
+    const response = await fetch('/api/verify-reseller', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: currentReseller })
     });
     const data = await response.json();
+    
     if(data.success) {
         document.getElementById('loginArea').style.display = 'none';
         document.getElementById('dashboardArea').style.display = 'block';
         document.getElementById('creditDisplay').style.display = 'block';
         document.getElementById('creditDisplay').innerText = `Remaining Credits: ${data.data.credits}`;
     } else {
-        alert('Invalid KEY!');
+        document.getElementById('resellerLoginError').style.display = 'block';
     }
 }
 
