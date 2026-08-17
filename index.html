@@ -22,10 +22,8 @@
         .key-list { margin-top: 15px; max-height: 250px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; }
         .key-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 12px; }
         .del-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; width: auto; margin-top: 0; }
-        .inline-copy-btn { background: #ff416c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-top: 8px; display: inline-block; width: auto; }
-        .inline-copy-btn:hover { background: #e0355b; }
-        .auto-gen-btn { background: #17a2b8; margin-top: 8px; padding: 8px; font-size: 13px; }
-        .auto-gen-btn:hover { background: #138496; }
+        .inline-copy-btn { background: #007bff; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-top: 8px; display: inline-block; width: auto; }
+        .inline-copy-btn:hover { background: #0056b3; }
     </style>
 </head>
 <body>
@@ -73,12 +71,8 @@
             <button onclick="loadKeys()" style="background:#17a2b8; margin-top:10px;">Refresh List</button>
         </div>
 
-        <!-- Add Reseller Section (Auto Username Generator Added) -->
+        <!-- Add Reseller Section (Clean Auto-Generation, Manual Input Removed) -->
         <div id="resellerSection" class="section">
-            <label>Reseller Username</label>
-            <input type="text" id="resellerName" placeholder="Enter Reseller Username">
-            <button type="button" class="auto-gen-btn" onclick="fillRandomReseller()">⚡ Auto Generate Username</button>
-
             <label>Credit</label>
             <select id="resellerCredits">
                 <option value="10">10 Credits</option>
@@ -88,7 +82,7 @@
                 <option value="500">500 Credits</option>
             </select>
 
-            <button onclick="addReseller()" style="background: #007bff;">Create / Add Credit (Auto)</button>
+            <button onclick="addReseller()" style="background: #007bff;">Create Reseller (Auto)</button>
         </div>
     </div>
 
@@ -135,10 +129,6 @@ function createRandomString(prefix) {
     return randomStr;
 }
 
-function fillRandomReseller() {
-    document.getElementById('resellerName').value = createRandomString("RES-USER-");
-}
-
 async function generateKey() {
     const autoKey = createRandomString("RAJ-KEY-");
     const hoursValid = document.getElementById('hoursInput').value;
@@ -166,28 +156,24 @@ async function generateKey() {
 }
 
 async function addReseller() {
-    let username = document.getElementById('resellerName').value.trim();
-    if (!username) {
-        username = createRandomString("RES-USER-");
-        document.getElementById('resellerName').value = username;
-    }
+    const autoUsername = createRandomString("RES-USER-");
     const credits = document.getElementById('resellerCredits').value;
     const resultDiv = document.getElementById('result');
 
     const response = await fetch('/api/add-reseller', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, credits: Number(credits) })
+        body: JSON.stringify({ username: autoUsername, credits: Number(credits) })
     });
     const data = await response.json();
     resultDiv.style.display = 'block';
     if (data.success) {
         resultDiv.style.borderLeftColor = '#007bff';
         resultDiv.innerHTML = `
-            <b style="color:#007bff;">✔ Reseller Created/Updated Successfully!</b><br>
+            <b style="color:#007bff;">✔ Reseller Created Successfully!</b><br>
             <b>Username:</b> <span id="generatedResellerText">${data.data.username}</span><br>
             <b>Total Credits: ${data.data.credits}</b><br>
-            <button class="inline-copy-btn" style="background:#007bff;" onclick="copyTextToClipboard('generatedResellerText')">📋 Copy Username</button>
+            <button class="inline-copy-btn" onclick="copyTextToClipboard('generatedResellerText')">📋 Copy Username</button>
         `;
     } else {
         resultDiv.style.borderLeftColor = '#dc3545';
