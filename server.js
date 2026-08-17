@@ -45,21 +45,10 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-// API: Get All Keys (Admin sees everything with Creator name)
+// API: Get All Keys (Admin)
 app.get('/api/keys', async (req, res) => {
   try {
     const keys = await LicenseKey.find().sort({ _id: -1 });
-    res.json({ success: true, data: keys });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// API: Get Reseller Keys (Reseller sees only their own keys)
-app.get('/api/reseller-keys', async (req, res) => {
-  try {
-    const { reseller } = req.query;
-    const keys = await LicenseKey.find({ createdBy: reseller }).sort({ _id: -1 });
     res.json({ success: true, data: keys });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -76,7 +65,7 @@ app.delete('/api/key/:id', async (req, res) => {
   }
 });
 
-// API: Add / Check Reseller
+// API: Add Reseller (Admin only creates/adds credits)
 app.post('/api/add-reseller', async (req, res) => {
   try {
     const { username, credits } = req.body;
@@ -93,6 +82,20 @@ app.post('/api/add-reseller', async (req, res) => {
       await reseller.save();
     }
     res.json({ success: true, message: 'Reseller ready!', data: reseller });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Verify Reseller Login (Strictly checks database)
+app.post('/api/verify-reseller', async (req, res) => {
+  try {
+    const { username } = req.body;
+    const reseller = await Reseller.findOne({ username });
+    if (!reseller) {
+      return res.json({ success: false, message: 'Invalid Reseller Key/Username!' });
+    }
+    res.json({ success: true, data: reseller });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
