@@ -7,14 +7,14 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 420px; }
-        h2 { color: #fff; text-align: center; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1px; }
-        .header-box { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(255,65,108,0.3); }
+        .header-box { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+        h2 { color: #fff; text-align: center; margin: 0; font-size: 24px; font-weight: 800; }
         label { display: block; margin-top: 12px; font-weight: 600; font-size: 13px; color: #555; }
         input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; outline: none; }
         button { background: #ff5722; color: white; border: none; padding: 12px; width: 100%; margin-top: 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
         button:hover { background: #e64a19; }
-        #result { margin-top: 15px; padding: 12px; background: #f8f9fa; border-left: 4px solid #ff5722; border-radius: 4px; word-break: break-all; font-size: 13px; display: none; }
-        .credit-box { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; text-align: center; display: none; }
+        #result { margin-top: 15px; padding: 12px; background: #f8f9fa; border-left: 4px solid #ff5722; border-radius: 4px; font-size: 13px; display: none; word-break: break-all; }
+        .credit-box { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; text-align: center; display: none; font-size: 15px; }
     </style>
 </head>
 <body>
@@ -57,27 +57,21 @@ let currentReseller = '';
 
 async function loginReseller() {
     currentReseller = document.getElementById('resellerUsername').value.trim();
-    if (!currentReseller) {
-        alert('कृपया KEY लिखें!');
-        return;
-    }
+    if (!currentReseller) { alert('कृपया KEY लिखें!'); return; }
 
-    try {
-        const response = await fetch('/api/add-reseller', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentReseller, credits: 0 })
-        });
-        const data = await response.json();
-        if(data.success) {
-            document.getElementById('loginArea').style.display = 'none';
-            document.getElementById('dashboardArea').style.display = 'block';
-            document.getElementById('creditDisplay').innerText = `Remaining Credits: ${data.data.credits}`;
-        } else {
-            alert('Invalid KEY / Reseller!');
-        }
-    } catch(e) {
-        alert('Login Failed!');
+    const response = await fetch('/api/add-reseller', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: currentReseller })
+    });
+    const data = await response.json();
+    if(data.success) {
+        document.getElementById('loginArea').style.display = 'none';
+        document.getElementById('dashboardArea').style.display = 'block';
+        document.getElementById('creditDisplay').style.display = 'block';
+        document.getElementById('creditDisplay').innerText = `Remaining Credits: ${data.data.credits}`;
+    } else {
+        alert('Invalid KEY!');
     }
 }
 
@@ -87,33 +81,29 @@ async function resellerGenerateKey() {
     const maxDevices = document.getElementById('limitInput').value;
     const resultDiv = document.getElementById('result');
 
-    if (!key) {
-        alert('कृपया KEY भरें!');
-        return;
-    }
+    if (!key) { alert('कृपया KEY भरें!'); return; }
 
-    try {
-        const response = await fetch('/api/reseller-generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ resellerUsername: currentReseller, key, hoursValid: Number(hoursValid), maxDevices: Number(maxDevices) })
-        });
+    const response = await fetch('/api/reseller-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resellerUsername: currentReseller, key, hoursValid: Number(hoursValid), maxDevices: Number(maxDevices) })
+    });
 
-        const data = await response.json();
-        resultDiv.style.display = 'block';
+    const data = await response.json();
+    resultDiv.style.display = 'block';
+    
+    if (data.success) {
+        resultDiv.style.borderLeftColor = '#28a745';
+        resultDiv.innerHTML = `<b style="color:green;">✔ Key Generated!</b><br>KEY: ${data.data.key}<br><b>Remaining Credits: ${data.remainingCredits}</b>`;
+        document.getElementById('creditDisplay').innerText = `Remaining Credits: ${data.remainingCredits}`;
         
-        if (data.success) {
-            resultDiv.style.borderLeftColor = '#28a745';
-            resultDiv.innerHTML = `<b style="color:green;">✔ Key Generated!</b><br><b>KEY:</b> ${data.data.key}<br><b>Remaining Credits:</b> ${data.remainingCredits}`;
-            document.getElementById('creditDisplay').innerText = `Remaining Credits: ${data.remainingCredits}`;
-        } else {
-            resultDiv.style.borderLeftColor = '#dc3545';
-            resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message}`;
+        if(data.remainingCredits <= 0) {
+            alert('Your credits are finished!');
+            location.reload();
         }
-    } catch (err) {
-        resultDiv.style.display = 'block';
+    } else {
         resultDiv.style.borderLeftColor = '#dc3545';
-        resultDiv.innerHTML = `<b style="color:red;">Failed:</b> ${err.message}`;
+        resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message || 'No Credits Left!'}`;
     }
 }
 </script>
