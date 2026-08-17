@@ -22,6 +22,7 @@
         .key-list { margin-top: 15px; max-height: 250px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; }
         .key-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 11px; }
         .del-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; width: auto; margin-top: 0; }
+        .creator-badge { background: #007bff; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -33,7 +34,7 @@
 
     <div class="nav-tabs">
         <button id="tabKeyBtn" class="active" onclick="switchTab('keyGen')">Generate</button>
-        <button id="tabListBtn" onclick="switchTab('keyList')">Key List & Expiry</button>
+        <button id="tabListBtn" onclick="switchTab('keyList')">All Keys Log</button>
         <button id="tabResellerBtn" onclick="switchTab('reseller')">Add Reseller</button>
     </div>
 
@@ -55,9 +56,9 @@
         <button onclick="generateKey()">Create Key</button>
     </div>
 
-    <!-- Key List & Expiry Section -->
+    <!-- Key List & Creator Section -->
     <div id="keyListSection" class="section">
-        <label>All Generated Keys & Expiry Details</label>
+        <label>All Keys (Admin & Reseller Details)</label>
         <div class="key-list" id="keyListContainer">Loading...</div>
         <button onclick="loadKeys()" style="background:#17a2b8; margin-top:10px;">Refresh List</button>
     </div>
@@ -132,9 +133,14 @@ async function loadKeys() {
         container.innerHTML = '';
         data.data.forEach(k => {
             const expDate = new Date(k.expiry).toLocaleString();
+            const creator = k.createdBy || 'Admin';
+            const badgeColor = creator === 'Admin' ? '#28a745' : '#007bff';
             container.innerHTML += `
                 <div class="key-item">
-                    <div><b>${k.key}</b><br><span style="color:#666;">Exp: ${expDate}</span></div>
+                    <div>
+                        <b>${k.key}</b> <span class="creator-badge" style="background:${badgeColor};">${creator}</span><br>
+                        <span style="color:#666;">Exp: ${expDate}</span>
+                    </div>
                     <button class="del-btn" onclick="deleteKey('${k._id}')">Delete</button>
                 </div>`;
         });
