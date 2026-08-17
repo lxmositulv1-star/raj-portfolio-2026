@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Key Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { color: #333; text-align: center; }
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background: #28a745; color: white; border: none; padding: 12px; width: 100%; margin-top: 20px; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #218838; }
+        #result { margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 4px; word-break: break-all; font-size: 14px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🔑 Key System Management</h2>
+    
+    <label>Key Name / Value</label>
+    <input type="text" id="keyInput" placeholder="जैसे: RAJ-VIP-2026">
+
+    <label>Validity (Hours)</label>
+    <select id="hoursInput">
+        <option value="24">24 Hours (1 Day)</option>
+        <option value="168">168 Hours (7 Days)</option>
+        <option value="720">720 Hours (30 Days)</option>
+    </select>
+
+    <label>Usage Limit (Devices)</label>
+    <input type="number" id="limitInput" value="1" min="1">
+
+    <button onclick="generateKey()">Create Key</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+async function generateKey() {
+    const key = document.getElementById('keyInput').value;
+    const hoursValid = document.getElementById('hoursInput').value;
+    const maxDevices = document.getElementById('limitInput').value;
+    const resultDiv = document.getElementById('result');
+
+    if (!key) {
+        alert('कृपया Key Name भरें!');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key, hoursValid: Number(hoursValid), maxDevices: Number(maxDevices) })
+        });
+
+        const data = await response.json();
+        resultDiv.style.display = 'block';
+        
+        if (data.success) {
+            resultDiv.innerHTML = `<b style="color:green;">Success!</b><br>Key: ${data.data.key}<br>Expires: ${new Date(data.data.expiry).toLocaleString()}`;
+        } else {
+            resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.error || data.message}`;
+        }
+    } catch (err) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `<b style="color:red;">Failed:</b> ${err.message}`;
+    }
+}
+</script>
+
+</body>
+</html>
