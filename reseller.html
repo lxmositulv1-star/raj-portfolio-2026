@@ -24,12 +24,12 @@
         <h2>🔥 RAJ MODS 🔥</h2>
     </div>
 
-    <!-- Reseller Login Section (Strict DB Validation) -->
+    <!-- Reseller Login Section -->
     <div id="loginArea">
         <label>KEY</label>
-        <input type="text" id="resellerUsername" placeholder="KEY">
+        <input type="text" id="resellerUsername" placeholder="Enter Reseller Username">
         <button onclick="loginReseller()">Login</button>
-        <p id="resellerLoginError" style="color:red; font-size:12px; text-align:center; margin-top:10px; display:none;">अमान्य की (Invalid Key)! बिना अनुमति लॉगिन नहीं हो सकता।</p>
+        <p id="resellerLoginError" style="color:red; font-size:12px; text-align:center; margin-top:10px; display:none;">Access Denied: You are not an authorized Reseller!</p>
     </div>
 
     <!-- Reseller Dashboard -->
@@ -60,7 +60,7 @@ let currentReseller = '';
 
 async function loginReseller() {
     currentReseller = document.getElementById('resellerUsername').value.trim();
-    if (!currentReseller) { alert('कृपया KEY लिखें!'); return; }
+    if (!currentReseller) { alert('Please enter your Username!'); return; }
 
     const response = await fetch('/api/verify-reseller', {
         method: 'POST',
@@ -85,7 +85,7 @@ async function resellerGenerateKey() {
     const maxDevices = document.getElementById('limitInput').value;
     const resultDiv = document.getElementById('result');
 
-    if (!key) { alert('कृपया KEY भरें!'); return; }
+    if (!key) { alert('Please enter a KEY!'); return; }
 
     const response = await fetch('/api/reseller-generate', {
         method: 'POST',
