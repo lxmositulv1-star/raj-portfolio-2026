@@ -15,10 +15,8 @@
         button:hover { background: #e64a19; }
         #result { margin-top: 15px; padding: 12px; background: #f8f9fa; border-left: 4px solid #ff5722; border-radius: 4px; font-size: 13px; display: none; word-break: break-all; }
         .credit-box { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; text-align: center; font-size: 14px; display: none; }
-        .btn-flex { display: flex; gap: 5px; margin-top: 5px; }
-        .gen-btn { background: #17a2b8; font-size: 12px; padding: 8px; margin-top: 0; flex: 2; }
-        .copy-btn { background: #6c757d; font-size: 12px; padding: 8px; margin-top: 0; flex: 1; }
-        .copy-btn:hover { background: #5a6268; }
+        .inline-copy-btn { background: #ff5722; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-top: 8px; display: inline-block; width: auto; }
+        .inline-copy-btn:hover { background: #e64a19; }
     </style>
 </head>
 <body>
@@ -30,24 +28,17 @@
 
     <!-- Reseller Login Section -->
     <div id="loginArea">
-        <label>KEY</label>
+        <label>Reseller Username</label>
         <input type="text" id="resellerUsername" placeholder="Enter Reseller Username">
         <button onclick="loginReseller()">Login</button>
         <p id="resellerLoginError" style="color:red; font-size:12px; text-align:center; margin-top:10px; display:none;">Access Denied: You are not an authorized Reseller!</p>
     </div>
 
-    <!-- Reseller Dashboard -->
+    <!-- Reseller Dashboard (Clean Auto-Generation) -->
     <div id="dashboardArea" style="display:none;">
         <div id="creditDisplay" class="credit-box">Remaining Credits: 0</div>
 
-        <label>KEY</label>
-        <input type="text" id="keyInput" placeholder="KEY">
-        <div class="btn-flex">
-            <button type="button" class="gen-btn" onclick="generateRandomKey('keyInput')">⚡ Generate Random</button>
-            <button type="button" class="copy-btn" onclick="copyToClipboard('keyInput')">📋 Copy</button>
-        </div>
-
-        <label>expiry date</label>
+        <label>Expiry Date</label>
         <select id="hoursInput">
             <option value="24">24 Hours (1 Day)</option>
             <option value="168">168 Hours (7 Days)</option>
@@ -65,25 +56,6 @@
 
 <script>
 let currentReseller = '';
-
-function generateRandomKey(elementId) {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let randomStr = "RES";
-    for (let i = 0; i < 8; i++) {
-        randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    document.getElementById(elementId).value = randomStr;
-}
-
-function copyToClipboard(elementId) {
-    const inputField = document.getElementById(elementId);
-    if (!inputField.value) {
-        alert('Nothing to copy!');
-        return;
-    }
-    navigator.clipboard.writeText(inputField.value);
-    alert('Copied to clipboard: ' + inputField.value);
-}
 
 async function loginReseller() {
     currentReseller = document.getElementById('resellerUsername').value.trim();
@@ -106,18 +78,26 @@ async function loginReseller() {
     }
 }
 
+// ऑटोमैटिक रैंडम की स्ट्रिंग बनाने वाला फंक्शन
+function createRandomString() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let randomStr = "RES-";
+    for (let i = 0; i < 8; i++) {
+        randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return randomStr;
+}
+
 async function resellerGenerateKey() {
-    const key = document.getElementById('keyInput').value;
+    const autoKey = createRandomString();
     const hoursValid = document.getElementById('hoursInput').value;
     const maxDevices = document.getElementById('limitInput').value;
     const resultDiv = document.getElementById('result');
 
-    if (!key) { alert('Please enter a KEY!'); return; }
-
     const response = await fetch('/api/reseller-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resellerUsername: currentReseller, key, hoursValid: Number(hoursValid), maxDevices: Number(maxDevices) })
+        body: JSON.stringify({ resellerUsername: currentReseller, key: autoKey, hoursValid: Number(hoursValid), maxDevices: Number(maxDevices) })
     });
 
     const data = await response.json();
@@ -125,7 +105,12 @@ async function resellerGenerateKey() {
     
     if (data.success) {
         resultDiv.style.borderLeftColor = '#28a745';
-        resultDiv.innerHTML = `<b style="color:green;">✔ Key Generated!</b><br>KEY: ${data.data.key}<br><b>Remaining Credits: ${data.remainingCredits}</b>`;
+        resultDiv.innerHTML = `
+            <b style="color:green;">✔ Key Generated Successfully!</b><br>
+            <b>KEY:</b> <span id="resellerGeneratedKeyText">${data.data.key}</span><br>
+            <b>Remaining Credits: ${data.remainingCredits}</b><br>
+            <button class="inline-copy-btn" onclick="copyGeneratedKey('resellerGeneratedKeyText')">📋 Copy Key</button>
+        `;
         document.getElementById('creditDisplay').innerText = `Remaining Credits: ${data.remainingCredits}`;
         
         if(data.remainingCredits <= 0) {
@@ -136,6 +121,12 @@ async function resellerGenerateKey() {
         resultDiv.style.borderLeftColor = '#dc3545';
         resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message || 'No Credits Left!'}`;
     }
+}
+
+function copyGeneratedKey(elementId) {
+    const keyText = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(keyText);
+    alert('Key Copied to Clipboard: ' + keyText);
 }
 </script>
 
