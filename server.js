@@ -87,15 +87,16 @@ app.post('/api/add-reseller', async (req, res) => {
   }
 });
 
-// API: Get Direct Reseller Info (For Direct Coding Setup)
-app.post('/api/get-direct-reseller', async (req, res) => {
+// API: Verify Reseller Login
+app.post('/api/verify-reseller', async (req, res) => {
   try {
     const { username } = req.body;
-    let reseller = await Reseller.findOne({ username });
-    // अगर डेटाबेस में नहीं है, तो कोडिंग वाले नाम से ऑटोमैटिक बना देगा और सेट क्रेडिट दे देगा
+    if (!username) {
+      return res.json({ success: false, message: 'Username required!' });
+    }
+    const reseller = await Reseller.findOne({ username: username });
     if (!reseller) {
-      reseller = new Reseller({ username, credits: 50 }); // डिफ़ॉल्ट क्रेडिट
-      await reseller.save();
+      return res.json({ success: false, message: 'Access Denied: Not an authorized reseller!' });
     }
     res.json({ success: true, data: reseller });
   } catch (error) {
@@ -108,14 +109,9 @@ app.post('/api/reseller-generate', async (req, res) => {
   try {
     const { resellerUsername, key, hoursValid, maxDevices } = req.body;
     
-    let reseller = await Reseller.findOne({ username: resellerUsername });
-    if (!reseller) {
-      reseller = new Reseller({ username: resellerUsername, credits: 50 });
-      await reseller.save();
-    }
-
-    if (reseller.credits <= 0) {
-      return res.status(403).json({ success: false, message: 'No Credits Left!' });
+    const reseller = await Reseller.findOne({ username: resellerUsername });
+    if (!reseller || reseller.credits <= 0) {
+      return res.status(403).json({ success: false, message: 'No Credits Left or Invalid Reseller!' });
     }
 
     const expiryDate = new Date(Date.now() + (hoursValid || 24) * 60 * 60 * 1000);
@@ -131,7 +127,7 @@ app.post('/api/reseller-generate', async (req, res) => {
   }
 });
 
-// API: Verify Key
+// API: Verify Key (For Game Lua)
 app.post('/api/verify', async (req, res) => {
   try {
     const { key, deviceId } = req.body;
