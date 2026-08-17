@@ -65,7 +65,18 @@ app.delete('/api/key/:id', async (req, res) => {
   }
 });
 
-// API: Add Reseller
+// API: FULL SYSTEM RESET (Deletes ALL Keys and ALL Resellers instantly)
+app.delete('/api/full-reset', async (req, res) => {
+  try {
+    await LicenseKey.deleteMany({});
+    await Reseller.deleteMany({});
+    res.json({ success: true, message: 'Full system reset successful! All keys and resellers cleared.' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Add Reseller (Auto)
 app.post('/api/add-reseller', async (req, res) => {
   try {
     const { username, credits } = req.body;
@@ -127,7 +138,7 @@ app.post('/api/reseller-generate', async (req, res) => {
   }
 });
 
-// API: Verify Key (For Game Lua)
+// API: Verify Key
 app.post('/api/verify', async (req, res) => {
   try {
     const { key, deviceId } = req.body;
