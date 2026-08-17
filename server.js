@@ -16,7 +16,8 @@ const keySchema = new mongoose.Schema({
   expiry: { type: Date, required: true },
   maxDevices: { type: Number, default: 1 },
   devices: { type: [String], default: [] },
-  status: { type: String, default: 'Active' } 
+  status: { type: String, default: 'Active' },
+  createdBy: { type: String, default: 'Admin' }
 });
 
 const resellerSchema = new mongoose.Schema({
@@ -31,12 +32,12 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// API 1: Generate Key (Admin)
+// API: Generate Key (Admin)
 app.post('/api/generate', async (req, res) => {
   try {
     const { key, hoursValid, maxDevices } = req.body;
     const expiryDate = new Date(Date.now() + (hoursValid || 24) * 60 * 60 * 1000);
-    const newKey = new LicenseKey({ key, expiry: expiryDate, maxDevices: maxDevices || 1, status: 'Active' });
+    const newKey = new LicenseKey({ key, expiry: expiryDate, maxDevices: maxDevices || 1, status: 'Active', createdBy: 'Admin' });
     await newKey.save();
     res.json({ success: true, message: 'Key generated successfully!', data: newKey });
   } catch (error) {
@@ -44,17 +45,19 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-// API 2: Get All Keys (For Admin List & Delete)
+// API: Get All Keys (Optional filter by creator)
 app.get('/api/keys', async (req, res) => {
   try {
-    const keys = await LicenseKey.find().sort({ _id: -1 });
+    const { creator } = req.query;
+    let query = creator ? { createdBy: creator } : {};
+    const keys = await LicenseKey.find(query).sort({ _id: -1 });
     res.json({ success: true, data: keys });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// API 3: Delete Key (Admin)
+// API: Delete Key
 app.delete('/api/key/:id', async (req, res) => {
   try {
     await LicenseKey.findByIdAndDelete(req.params.id);
@@ -64,7 +67,7 @@ app.delete('/api/key/:id', async (req, res) => {
   }
 });
 
-// API 4: Add / Check Reseller
+// API: Add / Check Reseller
 app.post('/api/add-reseller', async (req, res) => {
   try {
     const { username, credits } = req.body;
@@ -86,18 +89,18 @@ app.post('/api/add-reseller', async (req, res) => {
   }
 });
 
-// API 5: Reseller Generate Key (Credit deduction & Check)
+// API: Reseller Generate Key
 app.post('/api/reseller-generate', async (req, res) => {
   try {
     const { resellerUsername, key, hoursValid, maxDevices } = req.body;
     
     const reseller = await Reseller.findOne({ username: resellerUsername });
     if (!reseller || reseller.credits <= 0) {
-      return.status(403).json({ success: false, message: 'No Credits Left or Invalid Key!' });
+      return res.status(403).json({ success: false, message: 'No Credits Left or Invalid Key!' });
     }
 
     const expiryDate = new Date(Date.now() + (hoursValid || 24) * 60 * 60 * 1000);
-    const newKey = new LicenseKey({ key, expiry: expiryDate, maxDevices: maxDevices || 1, status: 'Active' });
+    const newKey = new LicenseKey({ key, expiry: expiryDate, maxDevices: maxDevices || 1, status: 'Active', createdBy: resellerUsername });
     await newKey.save();
 
     reseller.credits -= 1; 
@@ -109,7 +112,7 @@ app.post('/api/reseller-generate', async (req, res) => {
   }
 });
 
-// API 6: Verify Key (For Game/Lua)
+// API: Verify Key
 app.post('/api/verify', async (req, res) => {
   try {
     const { key, deviceId } = req.body;
