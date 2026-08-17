@@ -3,42 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Key Manager</title>
+    <title>RAJ MODS - Management System</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { color: #333; text-align: center; }
-        label { display: block; margin-top: 10px; font-weight: bold; font-size: 14px; }
-        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { background: #28a745; color: white; border: none; padding: 12px; width: 100%; margin-top: 20px; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 420px; }
+        h2 { color: #fff; text-align: center; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1px; }
+        .header-box { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(255,65,108,0.3); }
+        label { display: block; margin-top: 12px; font-weight: 600; font-size: 13px; color: #555; }
+        input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; outline: none; transition: 0.3s; }
+        input:focus { border-color: #ff416c; box-shadow: 0 0 5px rgba(255,65,108,0.3); }
+        button { background: #28a745; color: white; border: none; padding: 12px; width: 100%; margin-top: 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button:hover { background: #218838; }
-        #result { margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 4px; word-break: break-all; font-size: 14px; display: none; }
+        #result { margin-top: 15px; padding: 12px; background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 4px; word-break: break-all; font-size: 13px; display: none; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .nav-tabs button { margin-top: 0; padding: 10px; font-size: 13px; background: #e9ecef; color: #333; font-weight: 600; }
+        .nav-tabs button.active { background: #ff416c; color: white; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🔑 Key System Management</h2>
-    
-    <label>Key Name / Value</label>
-    <input type="text" id="keyInput" placeholder="जैसे: RAJ-VIP-2026">
+    <div class="header-box">
+        <h2>🔥 RAJ MODS 🔥</h2>
+    </div>
 
-    <label>Validity (Hours)</label>
-    <select id="hoursInput">
-        <option value="24">24 Hours (1 Day)</option>
-        <option value="168">168 Hours (7 Days)</option>
-        <option value="720">720 Hours (30 Days)</option>
-    </select>
+    <div class="nav-tabs">
+        <button id="tabKeyBtn" class="active" onclick="switchTab('keyGen')">Generate Key</button>
+        <button id="tabResellerBtn" onclick="switchTab('reseller')">Add Reseller</button>
+    </div>
 
-    <label>Usage Limit (Devices)</label>
-    <input type="number" id="limitInput" value="1" min="1">
+    <!-- Key Generation Section -->
+    <div id="keyGenSection" class="section active">
+        <label>KEY</label>
+        <input type="text" id="keyInput" placeholder="KEY">
 
-    <button onclick="generateKey()">Create Key</button>
+        <label>expiry date</label>
+        <select id="hoursInput">
+            <option value="24">24 Hours (1 Day)</option>
+            <option value="168">168 Hours (7 Days)</option>
+            <option value="720">720 Hours (30 Days)</option>
+        </select>
+
+        <label>Usage Limit (Devices)</label>
+        <input type="number" id="limitInput" value="1" min="1">
+
+        <button onclick="generateKey()">Create Key</button>
+    </div>
+
+    <!-- Reseller Management Section -->
+    <div id="resellerSection" class="section">
+        <label>Reseller Username</label>
+        <input type="text" id="resellerName" placeholder="जैसे: reseller_raj">
+
+        <label>Assign Credits</label>
+        <input type="number" id="resellerCredits" placeholder="कितना क्रेडिट देना है (जैसे: 50)" min="1">
+
+        <button onclick="addReseller()" style="background: #007bff;">Create Reseller</button>
+    </div>
 
     <div id="result"></div>
 </div>
 
 <script>
+function switchTab(tab) {
+    if(tab === 'keyGen') {
+        document.getElementById('keyGenSection').classList.add('active');
+        document.getElementById('resellerSection').classList.remove('active');
+        document.getElementById('tabKeyBtn').classList.add('active');
+        document.getElementById('tabResellerBtn').classList.remove('active');
+    } else {
+        document.getElementById('resellerSection').classList.add('active');
+        document.getElementById('keyGenSection').classList.remove('active');
+        document.getElementById('tabResellerBtn').classList.add('active');
+        document.getElementById('tabKeyBtn').classList.remove('active');
+    }
+    document.getElementById('result').style.display = 'none';
+}
+
 async function generateKey() {
     const key = document.getElementById('keyInput').value;
     const hoursValid = document.getElementById('hoursInput').value;
@@ -46,7 +89,7 @@ async function generateKey() {
     const resultDiv = document.getElementById('result');
 
     if (!key) {
-        alert('कृपया Key Name भरें!');
+        alert('कृपया KEY भरें!');
         return;
     }
 
@@ -61,12 +104,49 @@ async function generateKey() {
         resultDiv.style.display = 'block';
         
         if (data.success) {
-            resultDiv.innerHTML = `<b style="color:green;">Success!</b><br>Key: ${data.data.key}<br>Expires: ${new Date(data.data.expiry).toLocaleString()}`;
+            resultDiv.style.borderLeftColor = '#28a745';
+            resultDiv.innerHTML = `<b style="color:green;">✔ Key Created Successfully!</b><br><b>KEY:</b> ${data.data.key}<br><b>expiry date:</b> ${new Date(data.data.expiry).toLocaleString()}`;
         } else {
+            resultDiv.style.borderLeftColor = '#dc3545';
             resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.error || data.message}`;
         }
     } catch (err) {
         resultDiv.style.display = 'block';
+        resultDiv.style.borderLeftColor = '#dc3545';
+        resultDiv.innerHTML = `<b style="color:red;">Failed:</b> ${err.message}`;
+    }
+}
+
+async function addReseller() {
+    const username = document.getElementById('resellerName').value;
+    const credits = document.getElementById('resellerCredits').value;
+    const resultDiv = document.getElementById('result');
+
+    if (!username || !credits) {
+        alert('कृपया सभी डिटेल्स भरें!');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/add-reseller', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, credits: Number(credits) })
+        });
+
+        const data = await response.json();
+        resultDiv.style.display = 'block';
+        
+        if (data.success) {
+            resultDiv.style.borderLeftColor = '#007bff';
+            resultDiv.innerHTML = `<b style="color:#007bff;">✔ Reseller Added!</b><br><b>User:</b> ${data.data.username}<br><b>Credits:</b> ${data.data.credits}`;
+        } else {
+            resultDiv.style.borderLeftColor = '#dc3545';
+            resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message}`;
+        }
+    } catch (err) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.borderLeftColor = '#dc3545';
         resultDiv.innerHTML = `<b style="color:red;">Failed:</b> ${err.message}`;
     }
 }
