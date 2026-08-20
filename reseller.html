@@ -17,6 +17,10 @@
         .credit-box { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; text-align: center; font-size: 14px; display: none; }
         .inline-copy-btn { background: #ff5722; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-top: 8px; display: inline-block; width: auto; }
         .inline-copy-btn:hover { background: #e64a19; }
+        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .status-active { background: #28a745; color: white; }
+        .status-banned { background: #dc3545; color: white; }
+        .status-expired { background: #ffc107; color: #333; }
     </style>
 </head>
 <body>
@@ -43,10 +47,12 @@
             <option value="24">24 Hours (1 Day)</option>
             <option value="168">168 Hours (7 Days)</option>
             <option value="720">720 Hours (30 Days)</option>
+            <option value="2160">2160 Hours (90 Days)</option>
+            <option value="8760">8760 Hours (365 Days / 1 Year)</option>
         </select>
 
-        <label>Usage Limit (Devices)</label>
-        <input type="number" id="limitInput" value="1" min="1">
+        <label>Usage Limit (Devices) - 0 = Unlimited</label>
+        <input type="number" id="limitInput" value="1" min="0">
 
         <button onclick="resellerGenerateKey()">Create Key (Auto)</button>
     </div>
@@ -80,7 +86,7 @@ async function loginReseller() {
 
 function createRandomString() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let randomStr = "RES-";
+    let randomStr = "RES-KEY-";
     for (let i = 0; i < 8; i++) {
         randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -96,7 +102,12 @@ async function resellerGenerateKey() {
     const response = await fetch('/api/reseller-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resellerUsername: currentReseller, key: autoKey, hoursValid: Number(hoursValid), maxDevices: Number(maxDevices) })
+        body: JSON.stringify({ 
+            resellerUsername: currentReseller, 
+            key: autoKey, 
+            hoursValid: Number(hoursValid), 
+            maxDevices: Number(maxDevices) 
+        })
     });
 
     const data = await response.json();
@@ -107,18 +118,20 @@ async function resellerGenerateKey() {
         resultDiv.innerHTML = `
             <b style="color:green;">✔ Key Generated Successfully!</b><br>
             <b>KEY:</b> <span id="resellerGeneratedKeyText">${data.data.key}</span><br>
-            <b>Remaining Credits: ${data.remainingCredits}</b><br>
+            <b>Expiry:</b> ${new Date(data.data.expiry).toLocaleString()}<br>
+            <b>Max Devices:</b> ${data.data.maxDevices === 0 ? 'Unlimited' : data.data.maxDevices}<br>
+            <b>Status:</b> <span class="status-badge status-active">Active</span><br>
+            <b>Remaining Credits:</b> ${data.remainingCredits}<br>
             <button class="inline-copy-btn" onclick="copyGeneratedKey('resellerGeneratedKeyText')">📋 Copy Key</button>
         `;
         document.getElementById('creditDisplay').innerText = `Remaining Credits: ${data.remainingCredits}`;
         
         if(data.remainingCredits <= 0) {
-            alert('Your credits are finished!');
-            location.reload();
+            alert('⚠️ Your credits are finished! Please contact admin.');
         }
     } else {
         resultDiv.style.borderLeftColor = '#dc3545';
-        resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message || 'No Credits Left!'}`;
+        resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message || data.error || 'No Credits Left!'}`;
     }
 }
 
