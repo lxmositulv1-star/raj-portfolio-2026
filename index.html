@@ -6,7 +6,7 @@
     <title>RAJ MODS - Admin Panel</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 500px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 550px; }
         .header-box { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
         h2 { color: #fff; text-align: center; margin: 0; font-size: 24px; font-weight: 800; }
         label { display: block; margin-top: 12px; font-weight: 600; font-size: 13px; color: #555; }
@@ -19,11 +19,25 @@
         .section { display: none; }
         .section.active { display: block; }
         #result { margin-top: 15px; padding: 12px; background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 4px; font-size: 13px; display: none; word-break: break-all; }
-        .key-list { margin-top: 15px; max-height: 250px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; }
-        .key-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 12px; }
-        .del-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; width: auto; margin-top: 0; }
+        .key-list { margin-top: 15px; max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; }
+        .key-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 12px; flex-wrap: wrap; gap: 5px; }
+        .key-item .key-info { flex: 1; min-width: 150px; }
+        .key-item .key-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .status-active { background: #28a745; color: white; }
+        .status-banned { background: #dc3545; color: white; }
+        .status-expired { background: #ffc107; color: #333; }
+        .toggle-btn { padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .toggle-btn.activate { background: #28a745; color: white; }
+        .toggle-btn.deactivate { background: #dc3545; color: white; }
+        .del-btn { background: #6c757d; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
         .inline-copy-btn { background: #007bff; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-top: 8px; display: inline-block; width: auto; }
         .inline-copy-btn:hover { background: #0056b3; }
+        .credit-input-group { display: flex; gap: 10px; align-items: center; }
+        .credit-input-group input { flex: 1; }
+        .reseller-result { margin-top: 10px; }
+        .full-reset-btn { background: #dc3545; color: white; border: none; padding: 10px; width: 100%; margin-top: 10px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .full-reset-btn:hover { background: #c82333; }
     </style>
 </head>
 <body>
@@ -56,10 +70,12 @@
                 <option value="24">24 Hours (1 Day)</option>
                 <option value="168">168 Hours (7 Days)</option>
                 <option value="720">720 Hours (30 Days)</option>
+                <option value="2160">2160 Hours (90 Days)</option>
+                <option value="8760">8760 Hours (365 Days / 1 Year)</option>
             </select>
 
-            <label>Usage Limit (Devices)</label>
-            <input type="number" id="limitInput" value="1" min="1">
+            <label>Usage Limit (Devices) - 0 = Unlimited</label>
+            <input type="number" id="limitInput" value="1" min="0">
 
             <button onclick="generateKey()">Create Key (Auto)</button>
         </div>
@@ -69,9 +85,10 @@
             <label>All Generated Keys & Expiry Details</label>
             <div class="key-list" id="keyListContainer">Loading...</div>
             <button onclick="loadKeys()" style="background:#17a2b8; margin-top:10px;">Refresh List</button>
+            <button onclick="fullReset()" class="full-reset-btn">⚠️ FULL SYSTEM RESET (Delete All)</button>
         </div>
 
-        <!-- Add Reseller Section (Clean Auto-Generation, Manual Input Removed) -->
+        <!-- Add Reseller Section -->
         <div id="resellerSection" class="section">
             <label>Credit</label>
             <select id="resellerCredits">
@@ -80,6 +97,7 @@
                 <option value="50">50 Credits</option>
                 <option value="100">100 Credits</option>
                 <option value="500">500 Credits</option>
+                <option value="1000">1000 Credits</option>
             </select>
 
             <button onclick="addReseller()" style="background: #007bff;">Create Reseller (Auto)</button>
@@ -97,6 +115,7 @@ function loginAdmin() {
     if(pass === ADMIN_PASSWORD) {
         document.getElementById('adminLoginArea').style.display = 'none';
         document.getElementById('adminDashboard').style.display = 'block';
+        loadKeys();
     } else {
         document.getElementById('loginError').style.display = 'block';
     }
@@ -147,8 +166,12 @@ async function generateKey() {
         resultDiv.innerHTML = `
             <b style="color:green;">✔ Key Generated Successfully!</b><br>
             <b>KEY:</b> <span id="generatedKeyText">${data.data.key}</span><br>
+            <b>Expiry:</b> ${new Date(data.data.expiry).toLocaleString()}<br>
+            <b>Max Devices:</b> ${data.data.maxDevices === 0 ? 'Unlimited' : data.data.maxDevices}<br>
+            <b>Status:</b> <span class="status-badge status-active">Active</span><br>
             <button class="inline-copy-btn" onclick="copyTextToClipboard('generatedKeyText')">📋 Copy Key</button>
         `;
+        loadKeys();
     } else {
         resultDiv.style.borderLeftColor = '#dc3545';
         resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.error}`;
@@ -172,12 +195,12 @@ async function addReseller() {
         resultDiv.innerHTML = `
             <b style="color:#007bff;">✔ Reseller Created Successfully!</b><br>
             <b>Username:</b> <span id="generatedResellerText">${data.data.username}</span><br>
-            <b>Total Credits: ${data.data.credits}</b><br>
+            <b>Total Credits:</b> ${data.data.credits}<br>
             <button class="inline-copy-btn" onclick="copyTextToClipboard('generatedResellerText')">📋 Copy Username</button>
         `;
     } else {
         resultDiv.style.borderLeftColor = '#dc3545';
-        resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message}`;
+        resultDiv.innerHTML = `<b style="color:red;">Error:</b> ${data.message || data.error}`;
     }
 }
 
@@ -190,27 +213,107 @@ function copyTextToClipboard(elementId) {
 async function loadKeys() {
     const container = document.getElementById('keyListContainer');
     container.innerHTML = 'Loading...';
-    const res = await fetch('/api/keys');
-    const data = await res.json();
-    if(data.success && data.data.length > 0) {
-        container.innerHTML = '';
-        data.data.forEach(k => {
-            const expDate = new Date(k.expiry).toLocaleString();
-            container.innerHTML += `
-                <div class="key-item">
-                    <div><b>${k.key}</b><br><span style="color:#666;">Exp: ${expDate}</span></div>
-                    <button class="del-btn" onclick="deleteKey('${k._id}')">Delete</button>
-                </div>`;
+    try {
+        const res = await fetch('/api/keys');
+        const data = await res.json();
+        if(data.success && data.data.length > 0) {
+            container.innerHTML = '';
+            data.data.forEach(k => {
+                const expDate = new Date(k.expiry).toLocaleString();
+                let statusClass = 'status-active';
+                let statusText = k.status;
+                if(k.status === 'Banned') statusClass = 'status-banned';
+                else if(k.status === 'Expired') statusClass = 'status-expired';
+                else if(k.status === 'Active') statusClass = 'status-active';
+
+                const maxDevicesText = k.maxDevices === 0 ? 'Unlimited' : k.maxDevices;
+                const devicesCount = k.devices ? k.devices.length : 0;
+
+                container.innerHTML += `
+                    <div class="key-item">
+                        <div class="key-info">
+                            <b>${k.key}</b><br>
+                            <span style="color:#666;">Exp: ${expDate}</span><br>
+                            <span style="font-size:10px;">Devices: ${devicesCount}/${maxDevicesText}</span>
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="key-actions">
+                            ${k.status === 'Active' ? 
+                                `<button class="toggle-btn deactivate" onclick="toggleKeyStatus('${k._id}', 'deactivate')">🔴 Deactivate</button>` :
+                                `<button class="toggle-btn activate" onclick="toggleKeyStatus('${k._id}', 'activate')">🟢 Activate</button>`
+                            }
+                            <button class="del-btn" onclick="deleteKey('${k._id}')">🗑 Delete</button>
+                        </div>
+                    </div>`;
+            });
+        } else {
+            container.innerHTML = 'No Keys Found!';
+        }
+    } catch(e) {
+        container.innerHTML = 'Error loading keys!';
+    }
+}
+
+async function toggleKeyStatus(id, action) {
+    const actionText = action === 'activate' ? 'Activate' : 'Deactivate';
+    if(!confirm(`Are you sure you want to ${actionText} this key?`)) return;
+    
+    try {
+        const response = await fetch('/api/toggle-key-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keyId: id, action: action })
         });
-    } else {
-        container.innerHTML = 'No Keys Found!';
+        const data = await response.json();
+        if(data.success) {
+            alert(`Key ${actionText}d Successfully!`);
+            loadKeys();
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.style.borderLeftColor = '#28a745';
+            resultDiv.innerHTML = `<b style="color:green;">✔ Key ${actionText}d Successfully!</b>`;
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch(e) {
+        alert('Error toggling key status!');
     }
 }
 
 async function deleteKey(id) {
     if(!confirm('Are you sure to delete this key?')) return;
-    await fetch(`/api/key/${id}`, { method: 'DELETE' });
-    loadKeys();
+    try {
+        await fetch(`/api/key/${id}`, { method: 'DELETE' });
+        loadKeys();
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        resultDiv.style.borderLeftColor = '#28a745';
+        resultDiv.innerHTML = `<b style="color:green;">✔ Key Deleted Successfully!</b>`;
+    } catch(e) {
+        alert('Error deleting key!');
+    }
+}
+
+async function fullReset() {
+    if(!confirm('⚠️ WARNING: This will delete ALL Keys and ALL Resellers permanently! Are you sure?')) return;
+    if(!confirm('⚠️ FINAL WARNING: This action CANNOT be undone! Confirm again?')) return;
+    
+    try {
+        const response = await fetch('/api/full-reset', { method: 'DELETE' });
+        const data = await response.json();
+        if(data.success) {
+            alert('✅ Full System Reset Completed! All keys and resellers cleared.');
+            loadKeys();
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.style.borderLeftColor = '#28a745';
+            resultDiv.innerHTML = `<b style="color:green;">✔ Full System Reset Completed!</b>`;
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch(e) {
+        alert('Error performing full reset!');
+    }
 }
 </script>
 
