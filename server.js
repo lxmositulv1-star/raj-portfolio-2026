@@ -16,7 +16,7 @@ const keySchema = new mongoose.Schema({
   expiry: { type: Date, required: true },
   maxDevices: { type: Number, default: 1 },
   devices: { type: [String], default: [] },
-  status: { type: String, default: 'Active' },
+  status: { type: String, default: 'Active' }, // Active, Banned, Expired
   createdBy: { type: String, default: 'Admin' }
 });
 
@@ -32,12 +32,24 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/reseller', (req, res) => {
+  res.sendFile(path.join(__dirname, 'reseller.html'));
+});
+
+// ============ ADMIN API ============
+
 // API: Generate Key (Admin)
 app.post('/api/generate', async (req, res) => {
   try {
     const { key, hoursValid, maxDevices } = req.body;
     const expiryDate = new Date(Date.now() + (hoursValid || 24) * 60 * 60 * 1000);
-    const newKey = new LicenseKey({ key, expiry: expiryDate, maxDevices: maxDevices || 1, status: 'Active', createdBy: 'Admin' });
+    const newKey = new LicenseKey({ 
+      key, 
+      expiry: expiryDate, 
+      maxDevices: maxDevices || 1, 
+      status: 'Active', 
+      createdBy: 'Admin' 
+    });
     await newKey.save();
     res.json({ success: true, message: 'Key generated successfully!', data: newKey });
   } catch (error) {
@@ -60,6 +72,31 @@ app.delete('/api/key/:id', async (req, res) => {
   try {
     await LicenseKey.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Key deleted successfully!' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Toggle Key Status (Activate/Deactivate)
+app.post('/api/toggle-key-status', async (req, res) => {
+  try {
+    const { keyId, action } = req.body; // action: 'activate' or 'deactivate'
+    const foundKey = await LicenseKey.findById(keyId);
+    if (!foundKey) {
+      return res.status(404).json({ success: false, error: 'Key not found!' });
+    }
+    
+    if (action === 'deactivate') {
+      foundKey.status = 'Banned';
+      await foundKey.save();
+      res.json({ success: true, message: 'Key Deactivated Successfully!', data: foundKey });
+    } else if (action === 'activate') {
+      foundKey.status = 'Active';
+      await foundKey.save();
+      res.json({ success: true, message: 'Key Activated Successfully!', data: foundKey });
+    } else {
+      res.status(400).json({ success: false, error: 'Invalid action!' });
+    }
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -126,7 +163,13 @@ app.post('/api/reseller-generate', async (req, res) => {
     }
 
     const expiryDate = new Date(Date.now() + (hoursValid || 24) * 60 * 60 * 1000);
-    const newKey = new LicenseKey({ key, expiry: expiryDate, maxDevices: maxDevices || 1, status: 'Active', createdBy: resellerUsername });
+    const newKey = new LicenseKey({ 
+      key, 
+      expiry: expiryDate, 
+      maxDevices: maxDevices || 1, 
+      status: 'Active', 
+      createdBy: resellerUsername 
+    });
     await newKey.save();
 
     reseller.credits -= 1; 
@@ -138,27 +181,75 @@ app.post('/api/reseller-generate', async (req, res) => {
   }
 });
 
-// API: Verify Key
+// ============ VERIFICATION API (FIXED) ============
+
+// API: Verify Key - FIXED: Now checks status properly
 app.post('/api/verify', async (req, res) => {
   try {
     const { key, deviceId } = req.body;
-    if (!key || !deviceId) return res.status(400).json({ success: false, message: 'Required fields missing!' });
+    if (!key || !deviceId) {
+      return res.status(400).json({ success: false, message: 'Required fields missing!' });
+    }
 
     const foundKey = await LicenseKey.findOne({ key: key });
-    if (!foundKey) return res.json({ success: false, message: 'Invalid Key!' });
-    if (foundKey.status === 'Banned') return res.json({ success: false, message: 'Key is Banned!' });
+    if (!foundKey) {
+      return res.json({ success: false, message: 'Invalid Key!' });
+    }
+
+    // CRITICAL FIX: Check if key is Banned
+    if (foundKey.status === 'Banned') {
+      return res.json({ success: false, message: 'Key is Banned/Deactivated!' });
+    }
+
+    // Check if key is Expired
     if (new Date() > new Date(foundKey.expiry)) {
       foundKey.status = 'Expired';
       await foundKey.save();
       return res.json({ success: false, message: 'Key has Expired!' });
     }
 
-    if (foundKey.devices.includes(deviceId)) return res.json({ success: true, message: 'Key Verified!' });
-    if (foundKey.devices.length >= foundKey.maxDevices) return res.json({ success: false, message: 'Device limit reached!' });
+    // Check if device already registered
+    if (foundKey.devices.includes(deviceId)) {
+      return res.json({ success: true, message: 'Key Verified!', data: { key: foundKey.key, status: foundKey.status } });
+    }
 
+    // Check device limit
+    if (foundKey.devices.length >= foundKey.maxDevices) {
+      return res.json({ success: false, message: 'Device limit reached!' });
+    }
+
+    // Register new device
     foundKey.devices.push(deviceId);
     await foundKey.save();
-    res.json({ success: true, message: 'Key Verified & Device registered!' });
+    res.json({ success: true, message: 'Key Verified & Device registered!', data: { key: foundKey.key, status: foundKey.status } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Check Key Status Only (for testing)
+app.post('/api/check-status', async (req, res) => {
+  try {
+    const { key } = req.body;
+    if (!key) {
+      return res.status(400).json({ success: false, message: 'Key required!' });
+    }
+
+    const foundKey = await LicenseKey.findOne({ key: key });
+    if (!foundKey) {
+      return res.json({ success: false, message: 'Key not found!' });
+    }
+
+    res.json({ 
+      success: true, 
+      data: {
+        key: foundKey.key,
+        status: foundKey.status,
+        expiry: foundKey.expiry,
+        maxDevices: foundKey.maxDevices,
+        devices: foundKey.devices
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
